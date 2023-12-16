@@ -1,15 +1,57 @@
-from PIL import Image, ImageFilter
+from PIL import Image, ImageFilter, ImageDraw
+import os
 
-def apply_threshold(image, threshold_value=128)
+def percent_to_8bit(percent):
+    return (percent * 255) / 100
+
+def apply_threshold(image, threshold_percent=50):
+    """ Returns a thresholded image
+
+    :param Image image: a PIL image object
+    :param int threshold_percent: 0 to 100 percent
+    """
+    threshold_value = percent_to_8bit(threshold_percent)
+
     grayscaled_img = image.convert("L")
-    thresholded_img = grayscaled_img.point(lambda x: 0 if x < threshold_value else 255, '1')
+    threshold_img = grayscaled_img.point(lambda x: 0 if x < threshold_value else 255, '1')
+
     return threshold_img
 
+def dump_histogram(image, output_path, threshold_lines):
+    grayscale_image = image.convert("L")
+    histogram = grayscale_image.histogram()
+
+    # Create a new image for the histogram
+    histogram_image = Image.new('RGB', (256, 100), color='white')
+    draw = ImageDraw.Draw(histogram_image)
+
+    # Draw the histogram
+    for i in range(256):
+        draw.line([(i, 100), (i, 100 - histogram[i] // 100)], fill='black')
+
+    # Draw the threshold lines
+    for th_line in threshold_lines:
+        x = int(th_line * 256 / 100)
+        draw.line([(x, 0), (x, 100)], fill='red')
+
+    # Save the histogram image
+    histogram_image.save(output_path)    
 
 input_image_path = "./input/input.jpg"
-output_image_path = "./output/output.jpg"
+output_image_dir = "./output/"
+output_image_suffix = ".jpg"
+threshold_lines = [25, 50, 75, 85]
 
 raw_image = Image.open(input_image_path)
-thresh_img = apply_threshold(raw_image)
-thresh_img.save(output_image_path)
+dump_histogram(raw_image, "./output/histogram.jpg", threshold_lines)
+
+shadow_img = apply_threshold(raw_image, threshold_lines[0])
+midtone_img = apply_threshold(raw_image, threshold_lines[1])
+fleshtone_img = apply_threshold(raw_image, threshold_lines[2])
+highlights_img = apply_threshold(raw_image, threshold_lines[3])
+
+shadow_img.save(os.path.join(output_image_dir, "shadow" + output_image_suffix))
+midtone_img.save(os.path.join(output_image_dir, "midtone" + output_image_suffix))
+fleshtone_img.save(os.path.join(output_image_dir, "fleshtone" + output_image_suffix))
+highlights_img.save(os.path.join(output_image_dir, "highlights" + output_image_suffix))
 
