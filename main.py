@@ -43,7 +43,11 @@ output_image_suffix = ".jpg"
 threshold_lines = [25, 50, 75, 85]
 
 raw_image = Image.open(input_image_path)
+raw_image = raw_image.transpose(Image.FLIP_LEFT_RIGHT)
 dump_histogram(raw_image, "./output/histogram.jpg", threshold_lines)
+
+posterized_img = raw_image.quantize(colors=6)
+posterized_img = posterized_img.convert("RGB")
 
 shadow_img = apply_threshold(raw_image, threshold_lines[0])
 midtone_img = apply_threshold(raw_image, threshold_lines[1])
@@ -54,4 +58,23 @@ shadow_img.save(os.path.join(output_image_dir, "shadow" + output_image_suffix))
 midtone_img.save(os.path.join(output_image_dir, "midtone" + output_image_suffix))
 fleshtone_img.save(os.path.join(output_image_dir, "fleshtone" + output_image_suffix))
 highlights_img.save(os.path.join(output_image_dir, "highlights" + output_image_suffix))
+raw_image.save(os.path.join(output_image_dir, "orig_mirrored" + output_image_suffix))
+posterized_img.save(os.path.join(output_image_dir, "posterized" + output_image_suffix))
+
+# images_to_composite = [shadow_img, midtone_img, fleshtone_img, highlights_img]
+images_to_composite = [highlights_img, fleshtone_img, midtone_img, shadow_img]
+
+composite_image = Image.new('RGBA', shadow_img.size, (255, 255, 255, 255))
+
+## Stack the thresholded images with varying saturation levels
+for i, thresholded_image in enumerate(images_to_composite):
+    alpha_channel = thresholded_image.point(lambda x: 0 if x > 0 else 255, 'L')
+    thresholded_image = thresholded_image.convert("RGBA")
+    thresholded_image.putalpha(alpha_channel)
+    saturation_level = i / (len(images_to_composite) - 1)  # Vary saturation from 0 to 1
+    blended_image = Image.blend(composite_image, thresholded_image, saturation_level)
+    composite_image.paste(blended_image, (0, 0), blended_image)
+
+# Save the composite image
+composite_image.save("./output/composite.png")
 
