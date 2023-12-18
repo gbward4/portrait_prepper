@@ -37,6 +37,23 @@ def dump_histogram(image, output_path, threshold_lines):
     # Save the histogram image
     histogram_image.save(output_path)    
 
+class Layer:
+
+    def __init__(self):
+        self.in_path = None
+        self.in_dir = None
+        self.out_path = None
+        self.name = None
+
+        self.threshold_value = None
+        self.rotate = False
+        self.mirror = False
+
+        self.image = None
+
+    def save(self):
+        pass
+
 input_image_path = "./input/input.jpg"
 output_image_dir = "./output/"
 output_image_suffix = ".jpg"
@@ -82,7 +99,7 @@ for i, thresholded_image in enumerate(images_to_composite):
     thresholded_image = thresholded_image.convert("RGBA")
     thresholded_image.putalpha(alpha_channel)
     saturation_level = i / (len(images_to_composite) - 1)  # Vary saturation from 0 to 1
-    blended_image = Image.blend(composite_image, thresholded_image, saturation_level)
+    blended_image = Image.blend(composite_image, thresholded_image, 0.75)
     composite_image.paste(blended_image, (0, 0), blended_image)
 
 # Save the composite image
