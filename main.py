@@ -1,4 +1,4 @@
-from PIL import Image, ImageFilter, ImageDraw
+from PIL import Image, ImageFilter, ImageDraw, ImageEnhance, ImageOps
 import os
 
 def percent_to_8bit(percent):
@@ -41,13 +41,22 @@ input_image_path = "./input/input.jpg"
 output_image_dir = "./output/"
 output_image_suffix = ".jpg"
 threshold_lines = [25, 50, 75, 85]
+rotate = False
 
 raw_image = Image.open(input_image_path)
-raw_image = raw_image.transpose(Image.FLIP_LEFT_RIGHT)
+raw_image = raw_image.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+if rotate:
+    raw_image = raw_image.transpose(Image.Transpose.ROTATE_270)
+raw_image = raw_image.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+raw_image = ImageOps.autocontrast(raw_image, 0.0)
 dump_histogram(raw_image, "./output/histogram.jpg", threshold_lines)
 
 posterized_img = raw_image.quantize(colors=6)
 posterized_img = posterized_img.convert("RGB")
+
+enhancer = ImageEnhance.Contrast(raw_image)
+darker_img = enhancer.enhance(1.5)
+low_contrast_img = enhancer.enhance(0.5)
 
 shadow_img = apply_threshold(raw_image, threshold_lines[0])
 midtone_img = apply_threshold(raw_image, threshold_lines[1])
@@ -60,8 +69,9 @@ fleshtone_img.save(os.path.join(output_image_dir, "fleshtone" + output_image_suf
 highlights_img.save(os.path.join(output_image_dir, "highlights" + output_image_suffix))
 raw_image.save(os.path.join(output_image_dir, "orig_mirrored" + output_image_suffix))
 posterized_img.save(os.path.join(output_image_dir, "posterized" + output_image_suffix))
+darker_img.save(os.path.join(output_image_dir, "contrast_high" + output_image_suffix))
+low_contrast_img.save(os.path.join(output_image_dir, "contrast_low" + output_image_suffix))
 
-# images_to_composite = [shadow_img, midtone_img, fleshtone_img, highlights_img]
 images_to_composite = [highlights_img, fleshtone_img, midtone_img, shadow_img]
 
 composite_image = Image.new('RGBA', shadow_img.size, (255, 255, 255, 255))
@@ -77,4 +87,7 @@ for i, thresholded_image in enumerate(images_to_composite):
 
 # Save the composite image
 composite_image.save("./output/composite.png")
+
+# Can I blue, yellow it?
+
 
