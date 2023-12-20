@@ -103,10 +103,12 @@ low_contrast_img = enhancer.enhance(0.5)
 shadow_layer = Layer(name="shadow", raw_image=raw_image, threshold_percent=25, canvas_color=(0, 0, 0))
 midtone_layer = Layer(name="midtone", raw_image=raw_image, threshold_percent=50, canvas_color=(0x58, 0x09, 0x9C))
 fleshtone_layer = Layer(name="fleshtone", raw_image=raw_image, threshold_percent=75, canvas_color=(0xFF, 0xAE, 0))
+highlights_layer = Layer(name="highlights", raw_image=raw_image, threshold_percent=85, canvas_color=(255, 255, 0))
 
 shadow_layer.save_threshold_mask()
 midtone_layer.save_threshold_mask()
 fleshtone_layer.save_threshold_mask()
+highlights_layer.save_threshold_mask()
 
 raw_image.save(os.path.join(output_image_dir, "orig_mirrored" + output_image_suffix))
 posterized_img.save(os.path.join(output_image_dir, "posterized" + output_image_suffix))
@@ -114,6 +116,7 @@ darker_img.save(os.path.join(output_image_dir, "contrast_high" + output_image_su
 low_contrast_img.save(os.path.join(output_image_dir, "contrast_low" + output_image_suffix))
 
 composite_image = Image.new('RGBA', shadow_layer.size, (255, 255, 255, 255))
+composite_image = Image.composite(composite_image, highlights_layer.colored_canvas, highlights_layer.threshold_mask)
 composite_image = Image.composite(composite_image, fleshtone_layer.colored_canvas, fleshtone_layer.threshold_mask)
 composite_image = Image.composite(composite_image, midtone_layer.colored_canvas, midtone_layer.threshold_mask)
 composite_image = Image.composite(composite_image, shadow_layer.colored_canvas, shadow_layer.threshold_mask)
