@@ -281,4 +281,5 @@ if __name__ == '__main__':
 # Contrast Slider
 # Posterized, and number of steps
 # Fix scaling
+# Allow change color
 
