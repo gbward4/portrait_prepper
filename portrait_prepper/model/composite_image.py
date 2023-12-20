@@ -1,21 +1,4 @@
-def apply_threshold(image, threshold_percent=50):
-    """ Returns a thresholded image
 
-    :param Image image: a PIL image object
-    :param int threshold_percent: 0 to 100 percent
-    """
-
-    def percent_to_8bit(percent):
-        """ Scale the percent into an 8 bit value """
-        return int((percent * 255) / 100)
-
-    threshold_value = percent_to_8bit(threshold_percent)
-
-    grayscaled_img = image.convert("L")
-    threshold_img = grayscaled_img.point(lambda x: 0 if x < threshold_value else 255, '1')
-
-    return threshold_img
-    
 def pil2pixmap(self, im):
     if im.mode == "RGB":
         r, g, b = im.split()

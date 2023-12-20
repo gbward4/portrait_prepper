@@ -1,8 +1,19 @@
-# make contorller
-# make 
+import sys
+from PyQt5.QtWidgets import QApplication
 
-if __name__ == '__main__':
+from portrait_prepper.view.gui import MainWindow
+from portrait_prepper.controller.controller import MainController
+
+
+def main():
     app = QApplication(sys.argv)
-    editor = PictureEditor()
-    editor.show()
+    gui = MainWindow()
+    controller = MainController(view=gui)
+    controller.setup()
+    controller.view.show()
+
     sys.exit(app.exec_())
+
+
+if __name__ == "__main__":
+    main()
