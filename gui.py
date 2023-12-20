@@ -196,6 +196,7 @@ class PictureEditor(QMainWindow):
             self.display_orig_image(self.original_image)
 
     def save_image(self):
+        # Todo handle no image
         file_dialog = QFileDialog()
         file_path, _ = file_dialog.getSaveFileName(self, 'Save Image', 'composite', 'Image Files (*.png)')
 
