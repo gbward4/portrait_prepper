@@ -1,8 +1,6 @@
 from PIL import Image, ImageFilter, ImageDraw, ImageEnhance, ImageOps
 import os
 
-def percent_to_8bit(percent):
-    return (percent * 255) / 100
 
 def apply_threshold(image, threshold_percent=50):
     """ Returns a thresholded image
@@ -10,6 +8,11 @@ def apply_threshold(image, threshold_percent=50):
     :param Image image: a PIL image object
     :param int threshold_percent: 0 to 100 percent
     """
+
+    def percent_to_8bit(percent):
+        """ Scale the percent into an 8 bit value """
+        return int((percent * 255) / 100)
+
     threshold_value = percent_to_8bit(threshold_percent)
 
     grayscaled_img = image.convert("L")
@@ -39,20 +42,42 @@ def dump_histogram(image, output_path, threshold_lines):
 
 class Layer:
 
-    def __init__(self):
-        self.in_path = None
-        self.in_dir = None
-        self.out_path = None
-        self.name = None
+    def __init__(
+            self, 
+            name,
+            raw_image,
+            threshold_percent,
+            canvas_color=(255, 255, 255),
+            out_dir="./output",
+            ):
 
-        self.threshold_value = None
-        self.rotate = False
-        self.mirror = False
+        self.name = name
+        self.out_dir = out_dir
+        self.canvas_color=canvas_color
 
-        self.image = None
+        self.threshold_percent = threshold_percent
 
-    def save(self):
-        pass
+        self._image = raw_image
+
+    def save_threshold_mask(self):
+        self.threshold_mask.save(os.path.join(self.out_dir, self.name + ".jpg"))
+
+    @property
+    def raw_image(self):
+        return self._image
+
+    @property
+    def size(self):
+        return self.raw_image.size
+
+    @property
+    def colored_canvas(self):
+        R, G, B = self.canvas_color
+        return Image.new("RGBA", self.raw_image.size, (R, G, B, 255))
+
+    @property
+    def threshold_mask(self):
+        return apply_threshold(self.raw_image, self.threshold_percent)
 
 input_image_path = "./input/input.jpg"
 output_image_dir = "./output/"
@@ -75,33 +100,25 @@ enhancer = ImageEnhance.Contrast(raw_image)
 darker_img = enhancer.enhance(1.5)
 low_contrast_img = enhancer.enhance(0.5)
 
-shadow_img = apply_threshold(raw_image, threshold_lines[0])
-midtone_img = apply_threshold(raw_image, threshold_lines[1])
-fleshtone_img = apply_threshold(raw_image, threshold_lines[2])
-highlights_img = apply_threshold(raw_image, threshold_lines[3])
+shadow_layer = Layer(name="shadow", raw_image=raw_image, threshold_percent=25, canvas_color=(0, 0, 0))
+midtone_layer = Layer(name="midtone", raw_image=raw_image, threshold_percent=50, canvas_color=(0x58, 0x09, 0x9C))
+fleshtone_layer = Layer(name="fleshtone", raw_image=raw_image, threshold_percent=75, canvas_color=(0xFF, 0xAE, 0))
+#highlights_layer = Layer(name="highlights", raw_image=raw_image, threshold_percent=85, canvas_color=(255, 255, 0))
 
-shadow_img.save(os.path.join(output_image_dir, "shadow" + output_image_suffix))
-midtone_img.save(os.path.join(output_image_dir, "midtone" + output_image_suffix))
-fleshtone_img.save(os.path.join(output_image_dir, "fleshtone" + output_image_suffix))
-highlights_img.save(os.path.join(output_image_dir, "highlights" + output_image_suffix))
+shadow_layer.save_threshold_mask()
+midtone_layer.save_threshold_mask()
+fleshtone_layer.save_threshold_mask()
+# highlights_layer.save_threshold_mask()
+
 raw_image.save(os.path.join(output_image_dir, "orig_mirrored" + output_image_suffix))
 posterized_img.save(os.path.join(output_image_dir, "posterized" + output_image_suffix))
 darker_img.save(os.path.join(output_image_dir, "contrast_high" + output_image_suffix))
 low_contrast_img.save(os.path.join(output_image_dir, "contrast_low" + output_image_suffix))
 
-images_to_composite = [highlights_img, fleshtone_img, midtone_img, shadow_img]
-images_to_composite = [midtone_img, shadow_img]
-
-composite_image = Image.new('RGBA', shadow_img.size, (255, 255, 255, 255))
-white = Image.new("RGB", shadow_img.size, "white")
-
-## Stack the thresholded images with varying saturation levels
-for i, thresholded_image in enumerate(images_to_composite):
-    composite_image.composite(composite_image, white, thresholded_image)
-
-# Save the composite image
+composite_image = Image.new('RGBA', shadow_layer.size, (255, 255, 255, 255))
+# composite_image = Image.composite(composite_image, highlights_layer.colored_canvas, highlights_layer.threshold_mask)
+composite_image = Image.composite(composite_image, fleshtone_layer.colored_canvas, fleshtone_layer.threshold_mask)
+composite_image = Image.composite(composite_image, midtone_layer.colored_canvas, midtone_layer.threshold_mask)
+composite_image = Image.composite(composite_image, shadow_layer.colored_canvas, shadow_layer.threshold_mask)
 composite_image.save("./output/composite.png")
-
-# Can I blue, yellow it?
-
 
