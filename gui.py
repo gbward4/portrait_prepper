@@ -3,7 +3,7 @@ import sys
 import cv2
 import numpy as np
 from PIL import Image, ImageFilter, ImageDraw, ImageEnhance, ImageOps, ImageQt
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QSlider, QVBoxLayout, QWidget, QAction, QFileDialog
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QSlider, QVBoxLayout, QWidget, QAction, QFileDialog, QHBoxLayout
 from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtCore import Qt, pyqtRemoveInputHook
 
@@ -25,6 +25,26 @@ def apply_threshold(image, threshold_percent=50):
     threshold_img = grayscaled_img.point(lambda x: 0 if x < threshold_value else 255, '1')
 
     return threshold_img
+
+def get_histogram(image, threshold_lines):
+
+    grayscale_image = image.convert("L")
+    histogram = grayscale_image.histogram()
+
+    # Create a new image for the histogram
+    histogram_image = Image.new('RGB', (256, 100), color='white')
+    draw = ImageDraw.Draw(histogram_image)
+
+    # Draw the histogram
+    for i in range(256):
+        draw.line([(i, 100), (i, 100 - histogram[i] // 100)], fill='black')
+
+    # Draw the threshold lines
+    for th_line in threshold_lines:
+        x = int(th_line * 256 / 100)
+        draw.line([(x, 0), (x, 100)], fill='red')
+
+    return histogram_image
 
 def dump_histogram(image, output_path, threshold_lines):
     grayscale_image = image.convert("L")
@@ -102,6 +122,10 @@ class PictureEditor(QMainWindow):
         open_action.triggered.connect(self.open_image)
         file_menu.addAction(open_action)
 
+        save_action = QAction('Save', self)
+        save_action.triggered.connect(self.save_image)
+        file_menu.addAction(save_action)
+
         exit_action = QAction('Exit', self)
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
@@ -109,6 +133,10 @@ class PictureEditor(QMainWindow):
         # Image Display
         self.image_label = QLabel(self)
         self.image_label.setAlignment(Qt.AlignCenter)
+
+        # Original Image Display
+        self.orig_image_label = QLabel(self)
+        self.orig_image_label.setAlignment(Qt.AlignCenter)
 
         # Histogram Display
         self.histogram_label = QLabel(self)
@@ -130,20 +158,22 @@ class PictureEditor(QMainWindow):
         self.fleshtone_slider.setValue(75)
         self.fleshtone_slider.valueChanged.connect(self.update_image)
 
-        self.highlight_slider = QSlider(Qt.Horizontal)
-        self.highlight_slider.setRange(0, 100)
-        self.highlight_slider.setValue(85)
-        self.highlight_slider.valueChanged.connect(self.update_image)
-
         # Layout
         central_widget = QWidget(self)
-        layout = QVBoxLayout(central_widget)
-        layout.addWidget(self.image_label)
-        layout.addWidget(self.histogram_label)
-        layout.addWidget(self.shadow_slider)
-        layout.addWidget(self.midtone_slider)
-        layout.addWidget(self.fleshtone_slider)
-        layout.addWidget(self.highlight_slider)
+        main_layout = QVBoxLayout(central_widget)
+
+        labels_layout = QHBoxLayout()
+        labels_layout.addWidget(self.image_label)
+        labels_layout.addWidget(self.orig_image_label)
+        labels_layout.addWidget(self.histogram_label)
+
+        sliders_layout = QVBoxLayout()
+        sliders_layout.addWidget(self.shadow_slider)
+        sliders_layout.addWidget(self.midtone_slider)
+        sliders_layout.addWidget(self.fleshtone_slider)
+
+        main_layout.addLayout(labels_layout)
+        main_layout.addLayout(sliders_layout)
 
         self.setCentralWidget(central_widget)
 
@@ -163,6 +193,17 @@ class PictureEditor(QMainWindow):
             self.original_image = ImageOps.autocontrast(self.original_image, 0.0)
 
             self.display_image(self.original_image)
+            self.display_orig_image(self.original_image)
+
+    def save_image(self):
+        file_dialog = QFileDialog()
+        file_path, _ = file_dialog.getSaveFileName(self, 'Save Image', 'composite', 'Image Files (*.png)')
+
+        self.composite_image.save(file_path)
+
+        file_dialog = QFileDialog()
+        file_path, _ = file_dialog.getSaveFileName(self, 'Save Histogram', 'histogram', 'Image Files (*.png)')
+        self.histogram.save(file_path)
 
     def pil2pixmap(self, im):
         if im.mode == "RGB":
@@ -180,41 +221,45 @@ class PictureEditor(QMainWindow):
         pixmap = QPixmap.fromImage(qim)
         return pixmap       
 
+    def display_orig_image(self, image):
+        pixmap = self.pil2pixmap(image)
+        self.orig_image_label.setPixmap(pixmap)
+
     def display_image(self, image):
         pixmap = self.pil2pixmap(image)
         self.image_label.setPixmap(pixmap)
-        # self.image_label.repaint()
 
-    def convert_image_to_pixmap(self, image):
-        q_image = ImageQt.ImageQt(image)
-        pixmap = QPixmap.fromImage(q_image)
-        return pixmap
+    def display_histogram(self, image):
+        pixmap = self.pil2pixmap(image)
+        self.histogram_label.setPixmap(pixmap)
 
     def update_histogram(self):
         threshold_lines = [
                 self.shadow_slider.value(),
                 self.midtone_slider.value(),
                 self.fleshtone_slider.value(),
-                self.highlight_slider.value()
                 ]
+
+        self.histogram = get_histogram(self.original_image, threshold_lines)
+        self.display_histogram(self.histogram)
 
 
     def update_image(self):
         if not self.original_image:
-            pass
-
-        # dump_histogram(raw_image, "./output/histogram.jpg", threshold_lines)
+            return
 
         shadow_layer = Layer(name="shadow", raw_image=self.original_image, threshold_percent=self.shadow_slider.value(), canvas_color=(0, 0, 0))
         midtone_layer = Layer(name="midtone", raw_image=self.original_image, threshold_percent=self.midtone_slider.value(), canvas_color=(0x58, 0x09, 0x9C))
         fleshtone_layer = Layer(name="fleshtone", raw_image=self.original_image, threshold_percent=self.fleshtone_slider.value(), canvas_color=(0xFF, 0xAE, 0))
-        highlights_layer = Layer(name="highlights", raw_image=self.original_image, threshold_percent=self.highlight_slider.value(), canvas_color=(255, 255, 0))
 
         composite_image = Image.new('RGBA', shadow_layer.size, (255, 255, 255, 255))
-        composite_image = Image.composite(composite_image, highlights_layer.colored_canvas, highlights_layer.threshold_mask)
         composite_image = Image.composite(composite_image, fleshtone_layer.colored_canvas, fleshtone_layer.threshold_mask)
         composite_image = Image.composite(composite_image, midtone_layer.colored_canvas, midtone_layer.threshold_mask)
         composite_image = Image.composite(composite_image, shadow_layer.colored_canvas, shadow_layer.threshold_mask)
+
+        self.composite_image = composite_image
+
+        self.update_histogram()
 
         self.display_image(composite_image)
 
