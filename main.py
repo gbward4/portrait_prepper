@@ -90,17 +90,14 @@ darker_img.save(os.path.join(output_image_dir, "contrast_high" + output_image_su
 low_contrast_img.save(os.path.join(output_image_dir, "contrast_low" + output_image_suffix))
 
 images_to_composite = [highlights_img, fleshtone_img, midtone_img, shadow_img]
+images_to_composite = [midtone_img, shadow_img]
 
 composite_image = Image.new('RGBA', shadow_img.size, (255, 255, 255, 255))
+white = Image.new("RGB", shadow_img.size, "white")
 
 ## Stack the thresholded images with varying saturation levels
 for i, thresholded_image in enumerate(images_to_composite):
-    alpha_channel = thresholded_image.point(lambda x: 0 if x > 0 else 255, 'L')
-    thresholded_image = thresholded_image.convert("RGBA")
-    thresholded_image.putalpha(alpha_channel)
-    saturation_level = i / (len(images_to_composite) - 1)  # Vary saturation from 0 to 1
-    blended_image = Image.blend(composite_image, thresholded_image, 0.75)
-    composite_image.paste(blended_image, (0, 0), blended_image)
+    composite_image.composite(composite_image, white, thresholded_image)
 
 # Save the composite image
 composite_image.save("./output/composite.png")
