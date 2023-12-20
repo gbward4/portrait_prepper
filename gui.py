@@ -270,3 +270,15 @@ if __name__ == '__main__':
     editor = PictureEditor()
     editor.show()
     sys.exit(app.exec_())
+
+
+# TODO
+# Toggle button flip
+# Toggle Heatmap presets
+# MVC the thing
+# Documentation
+# Have an image that comes up on boot
+# Contrast Slider
+# Posterized, and number of steps
+# Fix scaling
+
