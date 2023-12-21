@@ -1,18 +1,14 @@
-import os
-import sys
-import cv2
-import numpy as np
-from PIL import Image, ImageFilter, ImageDraw, ImageEnhance, ImageOps, ImageQt
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QSlider, QVBoxLayout, QWidget, QAction, QFileDialog, QHBoxLayout, QCheckBox
-from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtWidgets import QMainWindow, QLabel, QSlider, QVBoxLayout, QWidget, QAction, QFileDialog, QHBoxLayout, QCheckBox
 from PyQt5.QtCore import Qt, QObject, pyqtSignal, pyqtSlot
-from portrait_prepper.model.composite_image import update_image
 
 class MainWindowSignals(QObject):
     image_reverse_state_changed = pyqtSignal(object)
-    composite_sliders_updated = pyqtSignal(object, object, object)
+    composite_sliders_updated = pyqtSignal()
     save_image = pyqtSignal(str)
     load_image = pyqtSignal(str)
+    update_reference_image = pyqtSignal(object)
+    update_composite_image = pyqtSignal(object)
+    update_histogram = pyqtSignal(object)
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -42,14 +38,17 @@ class MainWindow(QMainWindow):
         # Composite Image Display
         self.composite_image_label = QLabel(self)
         self.composite_image_label.setAlignment(Qt.AlignCenter)
+        self.signals.update_composite_image.connect(self.update_composite_image)
 
         # Reference Image Display
         self.reference_image_label = QLabel(self)
         self.reference_image_label.setAlignment(Qt.AlignCenter)
+        self.signals.update_reference_image.connect(self.update_reference_image)
 
         # Histogram Display
         self.histogram_label = QLabel(self)
         self.histogram_label.setAlignment(Qt.AlignCenter)
+        self.signals.update_histogram.connect(self.update_histogram)
 
         # Sliders        
         self.shadow_slider = self.create_labeled_slider("Shadow:", Qt.Horizontal)
@@ -126,7 +125,7 @@ class MainWindow(QMainWindow):
         self.signals.image_reverse_state_changed.emit(self.checkbox_img_reverse)
 
     def update_composite_sliders(self):
-        self.signals.composite_sliders_updated.emit(self.shadow_slider, self.midtone_slider, self.fleshtone_slider)
+        self.signals.composite_sliders_updated.emit()
 
     def open_image(self):
         file_dialog = QFileDialog()
@@ -141,3 +140,12 @@ class MainWindow(QMainWindow):
 
         if file_path:
             self.signals.save_image.emit(file_path)
+
+    def update_reference_image(self, image):
+        self.reference_image_label.setPixmap(image)
+
+    def update_composite_image(self, image):
+        self.composite_image_label.setPixmap(image)
+
+    def update_histogram(self, image):
+        self.histogram_label.setPixmap(image)

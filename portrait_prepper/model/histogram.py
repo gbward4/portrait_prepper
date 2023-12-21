@@ -1,3 +1,4 @@
+from PIL import Image, ImageDraw
 def get_histogram(image, threshold_lines):
 
     grayscale_image = image.convert("L")
