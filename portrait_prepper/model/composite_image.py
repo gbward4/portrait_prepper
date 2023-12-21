@@ -1,4 +1,5 @@
-
+from portrait_prepper.model.layer import Layer
+from PIL import Image
 def pil2pixmap(self, im):
     if im.mode == "RGB":
         r, g, b = im.split()

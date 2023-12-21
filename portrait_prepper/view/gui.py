@@ -5,8 +5,14 @@ import numpy as np
 from PIL import Image, ImageFilter, ImageDraw, ImageEnhance, ImageOps, ImageQt
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QSlider, QVBoxLayout, QWidget, QAction, QFileDialog, QHBoxLayout, QCheckBox
 from PyQt5.QtGui import QPixmap, QImage
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QObject, pyqtSignal, pyqtSlot
 from portrait_prepper.model.composite_image import update_image
+
+class MainWindowSignals(QObject):
+    image_reverse_state_changed = pyqtSignal(object)
+    composite_sliders_updated = pyqtSignal(object, object, object)
+    save_image = pyqtSignal(str)
+    load_image = pyqtSignal(str)
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -15,6 +21,8 @@ class MainWindow(QMainWindow):
         self.initUI()
 
     def initUI(self):
+        self.signals = MainWindowSignals()
+
         # Menu Bar
         menubar = self.menuBar()
         file_menu = menubar.addMenu('File')
@@ -31,11 +39,11 @@ class MainWindow(QMainWindow):
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
 
-        # Image Display
-        self.image_label = QLabel(self)
-        self.image_label.setAlignment(Qt.AlignCenter)
+        # Composite Image Display
+        self.composite_image_label = QLabel(self)
+        self.composite_image_label.setAlignment(Qt.AlignCenter)
 
-        # Original Image Display
+        # Reference Image Display
         self.reference_image_label = QLabel(self)
         self.reference_image_label.setAlignment(Qt.AlignCenter)
 
@@ -47,33 +55,33 @@ class MainWindow(QMainWindow):
         self.shadow_slider = self.create_labeled_slider("Shadow:", Qt.Horizontal)
         self.shadow_slider.slider.setRange(0, 100)
         self.shadow_slider.slider.setValue(25)
-        self.shadow_slider.slider.valueChanged.connect(update_image)
+        self.shadow_slider.slider.valueChanged.connect(self.update_composite_sliders)
 
         self.midtone_slider = self.create_labeled_slider("Midtone:", Qt.Horizontal)
         self.midtone_slider.slider.setRange(0, 100)
         self.midtone_slider.slider.setValue(50)
-        self.midtone_slider.slider.valueChanged.connect(update_image)
+        self.midtone_slider.slider.valueChanged.connect(self.update_composite_sliders)
 
         self.fleshtone_slider = self.create_labeled_slider("Fleshtone:", Qt.Horizontal)
         self.fleshtone_slider.slider.setRange(0, 100)
         self.fleshtone_slider.slider.setValue(75)
-        self.fleshtone_slider.slider.valueChanged.connect(update_image)
+        self.fleshtone_slider.slider.valueChanged.connect(self.update_composite_sliders)
 
         # Buttons
-        self.checkbox_reverse = QCheckBox("Reverse Image", self)
-        self.checkbox_reverse.setChecked(True)
-        self.checkbox_reverse.stateChanged.connect(self.checkbox_reverse_state_changed)
+        self.checkbox_img_reverse = QCheckBox("Reverse Image", self)
+        self.checkbox_img_reverse.setChecked(True)
+        self.checkbox_img_reverse.stateChanged.connect(self.checkbox_reverse_state_changed)
 
         # Layout
         central_widget = QWidget(self)
         main_layout = QVBoxLayout(central_widget)
 
         settings_layout = QVBoxLayout() 
-        settings_layout.addWidget(self.checkbox_reverse)
+        settings_layout.addWidget(self.checkbox_img_reverse)
         settings_layout.addWidget(self.histogram_label)
 
         images_layout = QHBoxLayout()
-        images_layout.addWidget(self.image_label)
+        images_layout.addWidget(self.composite_image_label)
         images_layout.addWidget(self.reference_image_label)
 
         labels_layout = QHBoxLayout()
@@ -90,9 +98,7 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(central_widget)
 
-        self.original_image = None
-
-        self.setWindowTitle('Picture Editor')
+        self.setWindowTitle('Portrait Prepper')
         self.setGeometry(100, 100, 800, 600)
 
     def create_labeled_slider(self, label_text, orientation):
@@ -117,32 +123,21 @@ class MainWindow(QMainWindow):
         return container_widget
 
     def checkbox_reverse_state_changed(self):
-        self.original_image = self.original_image.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
-        self.display_reference_image(self.original_image)
-        update_image()
+        self.signals.image_reverse_state_changed.emit(self.checkbox_img_reverse)
+
+    def update_composite_sliders(self):
+        self.signals.composite_sliders_updated.emit(self.shadow_slider, self.midtone_slider, self.fleshtone_slider)
 
     def open_image(self):
         file_dialog = QFileDialog()
         file_path, _ = file_dialog.getOpenFileName(self, 'Open Image', '', 'Image Files (*.png *.jpg *.jpeg *.bmp *.gif)')
 
         if file_path:
-            self.original_image = Image.open(file_path)
-            # TODO Hack
-            self.original_image = ImageOps.autocontrast(self.original_image, 0.0)
-
-            if self.checkbox_reverse.isChecked():
-                self.checkbox_reverse_state_changed()
-
-            self.display_image(self.original_image)
-            update_image()
+            self.signals.load_image.emit(file_path)
 
     def save_image(self):
-        # Todo handle no image
         file_dialog = QFileDialog()
         file_path, _ = file_dialog.getSaveFileName(self, 'Save Image', 'composite', 'Image Files (*.png)')
 
-        self.composite_image.save(file_path)
-
-        file_dialog = QFileDialog()
-        file_path, _ = file_dialog.getSaveFileName(self, 'Save Histogram', 'histogram', 'Image Files (*.png)')
-        self.histogram.save(file_path)
+        if file_path:
+            self.signals.save_image.emit(file_path)
