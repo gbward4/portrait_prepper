@@ -1,4 +1,3 @@
-from PyQt5.QtCore import Qt, QObject, pyqtSignal, pyqtSlot
 from PIL import Image, ImageOps
 from portrait_prepper.model.composite_image import pil2pixmap
 from portrait_prepper.model.layer import Layer
@@ -50,8 +49,27 @@ class MainController():
         self.composite_image.save(file_path)
 
     def open_image(self, file_path):
-        self._original_image = Image.open(file_path)
+        image = Image.open(file_path)
+        self._original_image = self.fix_exif_rotation(image)
         self.update_images()
+
+    def fix_exif_rotation(self, image):
+        # Check for and retrieve the orientation EXIF tag
+        try:
+            exif_orientation = image._getexif().get(274, 1)
+        except (AttributeError, KeyError, IndexError):
+            exif_orientation = 1  # Default orientation if not found
+
+        # Rotate the image based on the EXIF orientation tag
+        if exif_orientation == 3:
+            image = image.rotate(180, expand=True)
+        elif exif_orientation == 6:
+            image = image.rotate(-90, expand=True)
+        elif exif_orientation == 8:
+            image = image.rotate(90, expand=True)
+
+        return image
+
 
     def update_reference_image(self):
         pixmap = pil2pixmap(self.reference_image)

@@ -150,11 +150,15 @@ class MainWindow(QMainWindow):
         if file_path:
             self.signals.save_image.emit(file_path)
 
-    def update_reference_image(self, image):
-        self.reference_image_label.setPixmap(image)
+    def update_reference_image(self, pixmap):
+        scaled_size = pixmap.size().scaled(600, 800, Qt.KeepAspectRatio)
+        pixmap_scaled = pixmap.scaled(scaled_size, Qt.KeepAspectRatio)
+        self.reference_image_label.setPixmap(pixmap_scaled)
 
-    def update_composite_image(self, image):
-        self.composite_image_label.setPixmap(image)
+    def update_composite_image(self, pixmap):
+        scaled_size = pixmap.size().scaled(600, 800, Qt.KeepAspectRatio)
+        pixmap_scaled = pixmap.scaled(scaled_size, Qt.KeepAspectRatio)
+        self.composite_image_label.setPixmap(pixmap_scaled)
 
     def update_histogram(self, image):
         self.histogram_label.setPixmap(image)
