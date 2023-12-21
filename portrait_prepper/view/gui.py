@@ -2,7 +2,8 @@ from PyQt5.QtWidgets import QMainWindow, QLabel, QSlider, QVBoxLayout, QWidget, 
 from PyQt5.QtCore import Qt, QObject, pyqtSignal, pyqtSlot
 
 class MainWindowSignals(QObject):
-    image_reverse_state_changed = pyqtSignal(object)
+    image_reverse_state_changed = pyqtSignal()
+    autocontrast_state_changed = pyqtSignal()
     composite_sliders_updated = pyqtSignal()
     save_image = pyqtSignal(str)
     load_image = pyqtSignal(str)
@@ -71,12 +72,17 @@ class MainWindow(QMainWindow):
         self.checkbox_img_reverse.setChecked(True)
         self.checkbox_img_reverse.stateChanged.connect(self.checkbox_reverse_state_changed)
 
+        self.checkbox_autocontrast = QCheckBox("Autocontrast Image", self)
+        self.checkbox_autocontrast.setChecked(True)
+        self.checkbox_autocontrast.stateChanged.connect(self.autocontrast_state_changed)
+
         # Layout
         central_widget = QWidget(self)
         main_layout = QVBoxLayout(central_widget)
 
         settings_layout = QVBoxLayout() 
         settings_layout.addWidget(self.checkbox_img_reverse)
+        settings_layout.addWidget(self.checkbox_autocontrast)
         settings_layout.addWidget(self.histogram_label)
 
         images_layout = QHBoxLayout()
@@ -122,7 +128,10 @@ class MainWindow(QMainWindow):
         return container_widget
 
     def checkbox_reverse_state_changed(self):
-        self.signals.image_reverse_state_changed.emit(self.checkbox_img_reverse)
+        self.signals.image_reverse_state_changed.emit()
+
+    def autocontrast_state_changed(self):
+        self.signals.autocontrast_state_changed.emit()
 
     def update_composite_sliders(self):
         self.signals.composite_sliders_updated.emit()

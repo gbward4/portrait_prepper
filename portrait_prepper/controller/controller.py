@@ -3,6 +3,7 @@ from PIL import Image, ImageOps
 from portrait_prepper.model.composite_image import pil2pixmap
 from portrait_prepper.model.layer import Layer
 from portrait_prepper.model.histogram import get_histogram
+from copy import copy
 
 
 class MainController():
@@ -11,16 +12,36 @@ class MainController():
     def __init__(self, view):
         self.view = view
 
-        self.view.signals.image_reverse_state_changed.connect(self.reverse_image_state_changed)
+        self.view.signals.image_reverse_state_changed.connect(self.update_images)
+        self.view.signals.autocontrast_state_changed.connect(self.update_images)
+        self.view.signals.composite_sliders_updated.connect(self.update_images)
         self.view.signals.save_image.connect(self.save_image)
         self.view.signals.load_image.connect(self.open_image)
-        self.view.signals.composite_sliders_updated.connect(self.update_sliders)
 
-        self.reference_image = None
+        self._original_image = None
         self.composite_image = None
         self.histogram = None
 
-        self.image_reversed = False
+    @property
+    def reference_image(self):
+        img = copy(self._original_image)
+        if self.view.checkbox_autocontrast.isChecked():
+            img = self.autocontrasted_image(img)
+        if self.view.checkbox_img_reverse.isChecked():
+            img = self.reversed_image(img)
+
+        return img
+
+    def autocontrasted_image(self, image):
+        return ImageOps.autocontrast(image, 1)
+
+    def reversed_image(self, image):
+        return image.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+
+    def update_images(self):
+        self.update_reference_image()
+        self.update_composite_image()
+        self.update_histogram()
 
     def setup(self):
         """ Some setup actions to do before opening Main Window """
@@ -29,18 +50,8 @@ class MainController():
         self.composite_image.save(file_path)
 
     def open_image(self, file_path):
-        self.reference_image = Image.open(file_path)
-        self.initial_image_processing()
-
-    def initial_image_processing(self):
-        # Hack to ensure crappy photos are handled reasonably.
-        self.reference_image = ImageOps.autocontrast(self.reference_image, 0.0)
-        if self.view.checkbox_img_reverse.isChecked():
-            self.reverse_image(self.view.checkbox_img_reverse)
-
-        self.update_reference_image()
-        self.update_composite_image()
-        self.update_histogram()
+        self._original_image = Image.open(file_path)
+        self.update_images()
 
     def update_reference_image(self):
         pixmap = pil2pixmap(self.reference_image)
@@ -62,9 +73,6 @@ class MainController():
         composite_image = Image.composite(composite_image, shadow_layer.colored_canvas, shadow_layer.threshold_mask)
 
         self.composite_image = composite_image
-    def update_sliders(self):
-        self.update_composite_image()
-        self.update_histogram()
 
     def update_histogram(self):
         threshold_lines = [
@@ -76,14 +84,4 @@ class MainController():
 
         pixmap = pil2pixmap(self.histogram)
         self.view.signals.update_histogram.emit(pixmap)
-    def reverse_image(self, checkbox):
-        self.reference_image = self.reference_image.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
-        if checkbox.isChecked():
-            self.image_reversed = True
-        else:
-            self.image_reversed = False
 
-    def reverse_image_state_changed(self):
-        self.reverse_image(self.view.checkbox_img_reverse)
-        self.update_reference_image()
-        self.update_composite_image()
