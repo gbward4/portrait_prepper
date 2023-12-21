@@ -1,0 +1,6 @@
+# Toggle Heatmap presets
+# Documentation
+# Posterized, and number of steps
+# Allow change color
+# about
+# Installer

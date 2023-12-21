@@ -1,19 +1,25 @@
-import os
-import sys
-import cv2
-import numpy as np
-from PIL import Image, ImageFilter, ImageDraw, ImageEnhance, ImageOps, ImageQt
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QSlider, QVBoxLayout, QWidget, QAction, QFileDialog, QHBoxLayout, QCheckBox
-from PyQt5.QtGui import QPixmap, QImage
-from PyQt5.QtCore import Qt, pyqtRemoveInputHook
+from PyQt5.QtWidgets import QMainWindow, QLabel, QSlider, QVBoxLayout, QWidget, QAction, QFileDialog, QHBoxLayout, QCheckBox
+from PyQt5.QtCore import Qt, QObject, pyqtSignal, pyqtSlot
 
-class PictureEditor(QMainWindow):
+class MainWindowSignals(QObject):
+    image_reverse_state_changed = pyqtSignal()
+    autocontrast_state_changed = pyqtSignal()
+    composite_sliders_updated = pyqtSignal()
+    save_image = pyqtSignal(str)
+    load_image = pyqtSignal(str)
+    update_reference_image = pyqtSignal(object)
+    update_composite_image = pyqtSignal(object)
+    update_histogram = pyqtSignal(object)
+
+class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
         self.initUI()
 
     def initUI(self):
+        self.signals = MainWindowSignals()
+
         # Menu Bar
         menubar = self.menuBar()
         file_menu = menubar.addMenu('File')
@@ -30,49 +36,57 @@ class PictureEditor(QMainWindow):
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
 
-        # Image Display
-        self.image_label = QLabel(self)
-        self.image_label.setAlignment(Qt.AlignCenter)
+        # Composite Image Display
+        self.composite_image_label = QLabel(self)
+        self.composite_image_label.setAlignment(Qt.AlignCenter)
+        self.signals.update_composite_image.connect(self.update_composite_image)
 
-        # Original Image Display
+        # Reference Image Display
         self.reference_image_label = QLabel(self)
         self.reference_image_label.setAlignment(Qt.AlignCenter)
+        self.signals.update_reference_image.connect(self.update_reference_image)
 
         # Histogram Display
         self.histogram_label = QLabel(self)
         self.histogram_label.setAlignment(Qt.AlignCenter)
+        self.signals.update_histogram.connect(self.update_histogram)
 
         # Sliders        
         self.shadow_slider = self.create_labeled_slider("Shadow:", Qt.Horizontal)
         self.shadow_slider.slider.setRange(0, 100)
         self.shadow_slider.slider.setValue(25)
-        self.shadow_slider.slider.valueChanged.connect(self.update_image)
+        self.shadow_slider.slider.valueChanged.connect(self.update_composite_sliders)
 
         self.midtone_slider = self.create_labeled_slider("Midtone:", Qt.Horizontal)
         self.midtone_slider.slider.setRange(0, 100)
         self.midtone_slider.slider.setValue(50)
-        self.midtone_slider.slider.valueChanged.connect(self.update_image)
+        self.midtone_slider.slider.valueChanged.connect(self.update_composite_sliders)
 
         self.fleshtone_slider = self.create_labeled_slider("Fleshtone:", Qt.Horizontal)
         self.fleshtone_slider.slider.setRange(0, 100)
         self.fleshtone_slider.slider.setValue(75)
-        self.fleshtone_slider.slider.valueChanged.connect(self.update_image)
+        self.fleshtone_slider.slider.valueChanged.connect(self.update_composite_sliders)
 
         # Buttons
-        self.checkbox_reverse = QCheckBox("Reverse Image", self)
-        self.checkbox_reverse.setChecked(True)
-        self.checkbox_reverse.stateChanged.connect(self.checkbox_reverse_state_changed)
+        self.checkbox_img_reverse = QCheckBox("Reverse Image", self)
+        self.checkbox_img_reverse.setChecked(True)
+        self.checkbox_img_reverse.stateChanged.connect(self.checkbox_reverse_state_changed)
+
+        self.checkbox_autocontrast = QCheckBox("Autocontrast Image", self)
+        self.checkbox_autocontrast.setChecked(True)
+        self.checkbox_autocontrast.stateChanged.connect(self.autocontrast_state_changed)
 
         # Layout
         central_widget = QWidget(self)
         main_layout = QVBoxLayout(central_widget)
 
         settings_layout = QVBoxLayout() 
-        settings_layout.addWidget(self.checkbox_reverse)
+        settings_layout.addWidget(self.checkbox_img_reverse)
+        settings_layout.addWidget(self.checkbox_autocontrast)
         settings_layout.addWidget(self.histogram_label)
 
         images_layout = QHBoxLayout()
-        images_layout.addWidget(self.image_label)
+        images_layout.addWidget(self.composite_image_label)
         images_layout.addWidget(self.reference_image_label)
 
         labels_layout = QHBoxLayout()
@@ -89,9 +103,7 @@ class PictureEditor(QMainWindow):
 
         self.setCentralWidget(central_widget)
 
-        self.original_image = None
-
-        self.setWindowTitle('Picture Editor')
+        self.setWindowTitle('Portrait Prepper')
         self.setGeometry(100, 100, 800, 600)
 
     def create_labeled_slider(self, label_text, orientation):
@@ -116,34 +128,37 @@ class PictureEditor(QMainWindow):
         return container_widget
 
     def checkbox_reverse_state_changed(self):
-        self.original_image = self.original_image.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
-        self.display_reference_image(self.original_image)
-        self.update_image()
+        self.signals.image_reverse_state_changed.emit()
+
+    def autocontrast_state_changed(self):
+        self.signals.autocontrast_state_changed.emit()
+
+    def update_composite_sliders(self):
+        self.signals.composite_sliders_updated.emit()
 
     def open_image(self):
         file_dialog = QFileDialog()
         file_path, _ = file_dialog.getOpenFileName(self, 'Open Image', '', 'Image Files (*.png *.jpg *.jpeg *.bmp *.gif)')
 
         if file_path:
-            self.original_image = Image.open(file_path)
-            # TODO Hack
-            self.original_image = ImageOps.autocontrast(self.original_image, 0.0)
-
-            if self.checkbox_reverse.isChecked():
-                self.checkbox_reverse_state_changed()
-
-            self.display_image(self.original_image)
-            self.update_image()
+            self.signals.load_image.emit(file_path)
 
     def save_image(self):
-        # Todo handle no image
         file_dialog = QFileDialog()
         file_path, _ = file_dialog.getSaveFileName(self, 'Save Image', 'composite', 'Image Files (*.png)')
 
-        self.composite_image.save(file_path)
+        if file_path:
+            self.signals.save_image.emit(file_path)
 
-        file_dialog = QFileDialog()
-        file_path, _ = file_dialog.getSaveFileName(self, 'Save Histogram', 'histogram', 'Image Files (*.png)')
-        self.histogram.save(file_path)
+    def update_reference_image(self, pixmap):
+        scaled_size = pixmap.size().scaled(600, 800, Qt.KeepAspectRatio)
+        pixmap_scaled = pixmap.scaled(scaled_size, Qt.KeepAspectRatio)
+        self.reference_image_label.setPixmap(pixmap_scaled)
 
+    def update_composite_image(self, pixmap):
+        scaled_size = pixmap.size().scaled(600, 800, Qt.KeepAspectRatio)
+        pixmap_scaled = pixmap.scaled(scaled_size, Qt.KeepAspectRatio)
+        self.composite_image_label.setPixmap(pixmap_scaled)
 
+    def update_histogram(self, image):
+        self.histogram_label.setPixmap(image)
