@@ -1,8 +1,8 @@
 # Toggle Heatmap presets
-# MVC the thing
 # Documentation
-# Have an image that comes up on boot
 # Contrast Slider
 # Posterized, and number of steps
 # Fix scaling
 # Allow change color
+# about
+# Installer
