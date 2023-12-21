@@ -26,7 +26,7 @@ class MainController():
         """ Some setup actions to do before opening Main Window """
 
     def save_image(self, file_path):
-        breakpoint()
+        self.composite_image.save(file_path)
 
     def open_image(self, file_path):
         self.reference_image = Image.open(file_path)
