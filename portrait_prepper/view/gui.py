@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QMainWindow, QLabel, QSlider, QVBoxLayout, QWidget, QAction, QFileDialog, QHBoxLayout, QCheckBox
+from PyQt5.QtWidgets import QMainWindow, QLabel, QSlider, QVBoxLayout, QWidget, QAction, QFileDialog, QHBoxLayout, QCheckBox, QColorDialog, QPushButton
 from PyQt5.QtCore import Qt, QObject, pyqtSignal, pyqtSlot
 
 class MainWindowSignals(QObject):
@@ -10,6 +10,10 @@ class MainWindowSignals(QObject):
     update_reference_image = pyqtSignal(object)
     update_composite_image = pyqtSignal(object)
     update_histogram = pyqtSignal(object)
+    update_color_scheme = pyqtSignal(object)
+    update_shadow_color = pyqtSignal(object)
+    update_midtone_color = pyqtSignal(object)
+    update_fleshtone_color = pyqtSignal(object)
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -68,6 +72,15 @@ class MainWindow(QMainWindow):
         self.fleshtone_slider.slider.valueChanged.connect(self.update_composite_sliders)
 
         # Buttons
+        self.shadow_color_button = QPushButton("Choose Shadow Color", self)
+        self.shadow_color_button.clicked.connect(self.change_shadow_color)
+
+        self.midtone_color_button = QPushButton("Choose Midtone Color", self)
+        self.midtone_color_button.clicked.connect(self.change_midtone_color)
+
+        self.fleshtone_color_button = QPushButton("Choose Fleshtone Color", self)
+        self.fleshtone_color_button.clicked.connect(self.change_fleshtone_color)
+
         self.checkbox_img_reverse = QCheckBox("Reverse Image", self)
         self.checkbox_img_reverse.setChecked(True)
         self.checkbox_img_reverse.stateChanged.connect(self.checkbox_reverse_state_changed)
@@ -84,6 +97,9 @@ class MainWindow(QMainWindow):
         settings_layout.addWidget(self.checkbox_img_reverse)
         settings_layout.addWidget(self.checkbox_autocontrast)
         settings_layout.addWidget(self.histogram_label)
+        settings_layout.addWidget(self.shadow_color_button)
+        settings_layout.addWidget(self.midtone_color_button)
+        settings_layout.addWidget(self.fleshtone_color_button)
 
         images_layout = QHBoxLayout()
         images_layout.addWidget(self.composite_image_label)
@@ -105,6 +121,27 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle('Portrait Prepper')
         self.setGeometry(100, 100, 800, 600)
+
+    def change_shadow_color(self):
+        color = self.show_color_dialog()
+        self.signals.update_shadow_color.emit(color)
+
+    def change_midtone_color(self):
+        color = self.show_color_dialog()
+        self.signals.update_midtone_color.emit(color)
+
+    def change_fleshtone_color(self):
+        color = self.show_color_dialog()
+        self.signals.update_fleshtone_color.emit(color)
+
+    def show_color_dialog(self):
+        color_dialog = QColorDialog(self)
+        color_dialog.setOption(QColorDialog.DontUseNativeDialog)
+
+        color = color_dialog.getColor()
+
+        if color.isValid():
+            return color
 
     def create_labeled_slider(self, label_text, orientation):
         # Create a QLabel for the slider label
@@ -151,12 +188,12 @@ class MainWindow(QMainWindow):
             self.signals.save_image.emit(file_path)
 
     def update_reference_image(self, pixmap):
-        scaled_size = pixmap.size().scaled(600, 800, Qt.KeepAspectRatio)
+        scaled_size = pixmap.size().scaled(600, 600, Qt.KeepAspectRatio)
         pixmap_scaled = pixmap.scaled(scaled_size, Qt.KeepAspectRatio)
         self.reference_image_label.setPixmap(pixmap_scaled)
 
     def update_composite_image(self, pixmap):
-        scaled_size = pixmap.size().scaled(600, 800, Qt.KeepAspectRatio)
+        scaled_size = pixmap.size().scaled(600, 600, Qt.KeepAspectRatio)
         pixmap_scaled = pixmap.scaled(scaled_size, Qt.KeepAspectRatio)
         self.composite_image_label.setPixmap(pixmap_scaled)
 

@@ -16,10 +16,17 @@ class MainController():
         self.view.signals.composite_sliders_updated.connect(self.update_images)
         self.view.signals.save_image.connect(self.save_image)
         self.view.signals.load_image.connect(self.open_image)
+        self.view.signals.update_shadow_color.connect(self.update_shadow_color)
+        self.view.signals.update_midtone_color.connect(self.update_midtone_color)
+        self.view.signals.update_fleshtone_color.connect(self.update_fleshtone_color)
 
         self._original_image = None
         self.composite_image = None
         self.histogram = None
+
+        self.shadow_color =(0, 0, 0)
+        self.midtone_color = (0x58, 0x09, 0x9C)
+        self.fleshtone_color = (0xFF, 0xAE, 0)
 
     @property
     def reference_image(self):
@@ -41,6 +48,19 @@ class MainController():
         self.update_reference_image()
         self.update_composite_image()
         self.update_histogram()
+
+    def update_shadow_color(self, color):
+        self.shadow_color = (color.red(), color.green(), color.blue())
+        self.update_images()
+
+    def update_midtone_color(self, color):
+        self.midtone_color = (color.red(), color.green(), color.blue())
+        self.update_images()
+
+    def update_fleshtone_color(self, color):
+        self.fleshtone_color = (color.red(), color.green(), color.blue())
+        self.update_images()
+
 
     def setup(self):
         """ Some setup actions to do before opening Main Window """
@@ -81,9 +101,9 @@ class MainController():
         self.view.signals.update_composite_image.emit(pixmap)
 
     def build_composite_image(self):
-        shadow_layer = Layer(name="shadow", raw_image=self.reference_image, threshold_percent=self.view.shadow_slider.slider.value(), canvas_color=(0, 0, 0))
-        midtone_layer = Layer(name="midtone", raw_image=self.reference_image, threshold_percent=self.view.midtone_slider.slider.value(), canvas_color=(0x58, 0x09, 0x9C))
-        fleshtone_layer = Layer(name="fleshtone", raw_image=self.reference_image, threshold_percent=self.view.fleshtone_slider.slider.value(), canvas_color=(0xFF, 0xAE, 0))
+        shadow_layer = Layer(name="shadow", raw_image=self.reference_image, threshold_percent=self.view.shadow_slider.slider.value(), canvas_color=self.shadow_color)
+        midtone_layer = Layer(name="midtone", raw_image=self.reference_image, threshold_percent=self.view.midtone_slider.slider.value(), canvas_color=self.midtone_color)
+        fleshtone_layer = Layer(name="fleshtone", raw_image=self.reference_image, threshold_percent=self.view.fleshtone_slider.slider.value(), canvas_color=self.fleshtone_color)
 
         composite_image = Image.new('RGBA', shadow_layer.size, (255, 255, 255, 255))
         composite_image = Image.composite(composite_image, fleshtone_layer.colored_canvas, fleshtone_layer.threshold_mask)
