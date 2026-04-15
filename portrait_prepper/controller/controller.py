@@ -3,7 +3,9 @@ from PIL import Image, ImageOps
 from portrait_prepper.model.composite_image import pil2pixmap
 from portrait_prepper.model.layer import Layer
 from portrait_prepper.model.histogram import get_histogram
+from portrait_prepper.view.gui import SliderGroup
 from copy import copy
+
 
 
 class MainController():
@@ -28,8 +30,26 @@ class MainController():
         self.midtone_color = (0x58, 0x09, 0x9C)
         self.fleshtone_color = (0xFF, 0xAE, 0)
 
+        self.build_sliders()  # todo move to setup
+
         self.default_image_path = resources.files("portrait_prepper.resources") / "ricky.jpg"
         # self.open_image(self.default_image_path)
+
+    def build_sliders(self):
+        default_num_layers = 3
+        slider_spacing = int(100 / (default_num_layers + 1))
+        for layer_idx in range(default_num_layers):
+            default_slider_value = ((layer_idx + 1) * slider_spacing)
+            slider_group = SliderGroup(layer_identity=layer_idx, value=default_slider_value)
+            self.view.sliders_layout.addWidget(slider_group)
+            # color
+
+
+    # for idx in range(num_sliders_default):
+    #     slider_group.slider.valueChanged.connect(self.update_composite_sliders)  # udpate to emit layer number
+    #     slider_group.btn_palette.clicked.connect(lambda _, i=idx: self.change_layer_color_requested(i))
+    #     slider_group.btn_trash.clicked.connect(lambda _, i=idx: self.delete_layer_requested(i))
+    #     self.sliders.append(slider_group)
 
     @property
     def reference_image(self):
@@ -118,12 +138,12 @@ class MainController():
             # TODO I'm stuck here on shadow_color, should pick some gradient and move on for now.  In future it should have presets, and slider group should have a color identity
             # TODO make a "layer" object that has "identity, color, threshold" attrs, 
             # TODO make three color groups, shadow midtone, fleshtone that have a default color.  What I really want to do is divide in three groups and then show divisions there
-            layer = Layer(name="", raw_image=self.reference_image, threshold_percent=slider_group.slider.value(), canvas_color=self.shadow_color)
+            layer = Layer(name="", raw_image=self.reference_image, threshold_percent=slider_group.slider.slider_value(), canvas_color=self.shadow_color)
             layers.append(layer)
 
-        shadow_layer = Layer(name="shadow", raw_image=self.reference_image, threshold_percent=self.view.shadow_slider.slider.value(), canvas_color=self.shadow_color)
-        midtone_layer = Layer(name="midtone", raw_image=self.reference_image, threshold_percent=self.view.midtone_slider.slider.value(), canvas_color=self.midtone_color)
-        fleshtone_layer = Layer(name="fleshtone", raw_image=self.reference_image, threshold_percent=self.view.fleshtone_slider.slider.value(), canvas_color=self.fleshtone_color)
+        shadow_layer = Layer(name="shadow", raw_image=self.reference_image, threshold_percent=self.view.shadow_slider.slider.slider_value(), canvas_color=self.shadow_color)
+        midtone_layer = Layer(name="midtone", raw_image=self.reference_image, threshold_percent=self.view.midtone_slider.slider.slider_value(), canvas_color=self.midtone_color)
+        fleshtone_layer = Layer(name="fleshtone", raw_image=self.reference_image, threshold_percent=self.view.fleshtone_slider.slider.slider_value(), canvas_color=self.fleshtone_color)
 
         composite_image = Image.new('RGBA', shadow_layer.size, (255, 255, 255, 255))
         composite_image = Image.composite(composite_image, fleshtone_layer.colored_canvas, fleshtone_layer.threshold_mask)
@@ -134,9 +154,9 @@ class MainController():
 
     def update_histogram(self):
         threshold_lines = [
-            self.view.shadow_slider.slider.value(),
-            self.view.midtone_slider.slider.value(),
-            self.view.fleshtone_slider.slider.value(),
+            self.view.shadow_slider.slider.slider_value(),
+            self.view.midtone_slider.slider.slider_value(),
+            self.view.fleshtone_slider.slider.slider_value(),
         ]
         self.histogram = get_histogram(self.reference_image, threshold_lines)
 

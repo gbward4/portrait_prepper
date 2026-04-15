@@ -45,9 +45,9 @@ def display_histogram(self, image):
 
 def update_histogram(self):
     threshold_lines = [
-            self.shadow_slider.slider.value(),
-            self.midtone_slider.slider.value(),
-            self.fleshtone_slider.slider.value(),
+            self.shadow_slider.slider.slider_value(),
+            self.midtone_slider.slider.slider_value(),
+            self.fleshtone_slider.slider.slider_value(),
             ]
 
     self.histogram = get_histogram(self.original_image, threshold_lines)

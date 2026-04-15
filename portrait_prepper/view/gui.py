@@ -33,7 +33,7 @@ class MainWindow(QMainWindow):
 
     def initUI(self):
         self.signals = MainWindowSignals()
-        self.sliders = []
+        # self.sliders = []
 
         # Menu Bar
         menubar = self.menuBar()
@@ -70,18 +70,18 @@ class MainWindow(QMainWindow):
         self.add_button = get_button(icon_path=resources.files("portrait_prepper.resources") / "add.png")
 
         # Sliders        
-        num_sliders_default = 8
+        # num_sliders_default = 8
 
-        for idx in range(num_sliders_default):
-            slider_group = self.get_slider_group("")
-            slider_group.slider.setRange(0, 100)
-            slider_spacing = int(100 / (num_sliders_default + 1))
-            slider_group.slider.setValue((idx + 1) * slider_spacing)
-            slider_group.slider.valueChanged.connect(self.update_composite_sliders)
-            slider_group.layer_identity = idx  # lazy attr assigning a layer identity I pick up in controller later.  Should be a class attr, but meh for now
-            slider_group.btn_palette.clicked.connect(lambda _, i=idx: self.change_layer_color_requested(i))
-            slider_group.btn_trash.clicked.connect(lambda _, i=idx: self.delete_layer_requested(i))
-            self.sliders.append(slider_group)
+        # for idx in range(num_sliders_default):
+        #     slider_group = self.get_slider_group("")
+        #     slider_group.slider.setRange(0, 100)
+        #     slider_spacing = int(100 / (num_sliders_default + 1))
+        #     slider_group.slider.setValue((idx + 1) * slider_spacing)
+        #     slider_group.slider.valueChanged.connect(self.update_composite_sliders)
+        #     slider_group.layer_identity = idx  # lazy attr assigning a layer identity I pick up in controller later.  Should be a class attr, but meh for now
+        #     slider_group.btn_palette.clicked.connect(lambda _, i=idx: self.change_layer_color_requested(i))
+        #     slider_group.btn_trash.clicked.connect(lambda _, i=idx: self.delete_layer_requested(i))
+        #     self.sliders.append(slider_group)
 
         self.checkbox_img_reverse = QCheckBox("Reverse Image", self)
         self.checkbox_img_reverse.setChecked(True)
@@ -109,12 +109,12 @@ class MainWindow(QMainWindow):
         labels_layout.addLayout(images_layout)
         labels_layout.addLayout(settings_layout)
 
-        sliders_layout = QVBoxLayout()
-        for slider_group in self.sliders:
-            sliders_layout.addWidget(slider_group)
+        self.sliders_layout = QVBoxLayout()
+        # for slider_group in self.sliders:
+        #     sliders_layout.addWidget(slider_group)
 
         main_layout.addLayout(labels_layout)
-        main_layout.addLayout(sliders_layout)
+        main_layout.addLayout(self.sliders_layout)
 
         self.setCentralWidget(central_widget)
 
@@ -137,30 +137,30 @@ class MainWindow(QMainWindow):
         if color.isValid():
             return color
 
-    def get_slider_group(self, label_text):
-        label = QLabel(label_text)
+    # def get_slider_group(self, label_text):
+    #     label = QLabel(label_text)
 
-        slider = QSlider(Qt.Horizontal)
-        slider.setRange(0, 100)
-        slider.setValue(50)  # Default value
+    #     slider = QSlider(Qt.Horizontal)
+    #     slider.setRange(0, 100)
+    #     slider.setValue(50)  # Default value
 
-        btn_trash = get_button(icon_path=resources.files("portrait_prepper.resources") / "trash.png")
-        btn_palette = get_button(icon_path=resources.files("portrait_prepper.resources") / "pallette.png")
+    #     btn_trash = get_button(icon_path=resources.files("portrait_prepper.resources") / "trash.png")
+    #     btn_palette = get_button(icon_path=resources.files("portrait_prepper.resources") / "pallette.png")
 
-        slider_layout = QHBoxLayout()
-        slider_layout.addWidget(label)
-        slider_layout.addWidget(slider)
+    #     slider_layout = QHBoxLayout()
+    #     slider_layout.addWidget(label)
+    #     slider_layout.addWidget(slider)
 
-        slider_layout.addWidget(btn_trash)
-        slider_layout.addWidget(btn_palette)
+    #     slider_layout.addWidget(btn_trash)
+    #     slider_layout.addWidget(btn_palette)
 
-        slider_group = QWidget()
-        slider_group.setLayout(slider_layout)
-        slider_group.slider = slider
-        slider_group.btn_palette = btn_palette
-        slider_group.btn_trash = btn_trash
+    #     slider_group = QWidget()
+    #     slider_group.setLayout(slider_layout)
+    #     slider_group.slider = slider
+    #     slider_group.btn_palette = btn_palette
+    #     slider_group.btn_trash = btn_trash
 
-        return slider_group
+    #     return slider_group
 
     def checkbox_reverse_state_changed(self):
         self.signals.image_reverse_state_changed.emit()
@@ -197,3 +197,41 @@ class MainWindow(QMainWindow):
 
     def update_histogram(self, image):
         self.histogram_label.setPixmap(image)
+
+class SliderGroup(QWidget):
+
+    def __init__(self, layer_identity, value, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.layer_identity = layer_identity
+        self.color = None
+        self.label = None
+        self.slider_value = value
+
+        self.slider = None
+        self.btn_palette = None
+        self.btn_trash = None
+
+        self.open()
+
+    def open(self):
+        # label = QLabel(self.label)
+
+        slider = QSlider(Qt.Horizontal)
+        slider.setRange(0, 100)
+        slider.setValue(self.slider_value)
+
+        btn_trash = get_button(icon_path=resources.files("portrait_prepper.resources") / "trash.png")
+        btn_palette = get_button(icon_path=resources.files("portrait_prepper.resources") / "pallette.png")
+
+        slider_layout = QHBoxLayout()
+        # slider_layout.addWidget(label)
+        slider_layout.addWidget(slider)
+        slider_layout.addWidget(btn_trash)
+        slider_layout.addWidget(btn_palette)
+
+        self.setLayout(slider_layout)
+
+        # Todo fix lazy attrs
+        self.slider = slider
+        self.btn_palette = btn_palette
+        self.btn_trash = btn_trash
