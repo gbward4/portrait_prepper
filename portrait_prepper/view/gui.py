@@ -1,5 +1,8 @@
+from importlib import resources
+from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QMainWindow, QLabel, QSlider, QVBoxLayout, QWidget, QAction, QFileDialog, QHBoxLayout, QCheckBox, QColorDialog, QPushButton
-from PyQt5.QtCore import Qt, QObject, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import Qt, QObject, pyqtSignal, pyqtSlot, QSize
+
 
 class MainWindowSignals(QObject):
     image_reverse_state_changed = pyqtSignal()
@@ -14,6 +17,17 @@ class MainWindowSignals(QObject):
     update_shadow_color = pyqtSignal(object)
     update_midtone_color = pyqtSignal(object)
     update_fleshtone_color = pyqtSignal(object)
+
+def get_button(icon_path, icon_size=25):
+    button = QPushButton()
+    button.setIcon(QIcon(str(icon_path)))
+    button.setIconSize(QSize(icon_size, icon_size))
+
+    return button
+
+def get_new_slider_group():
+    pass
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -60,26 +74,19 @@ class MainWindow(QMainWindow):
         self.shadow_slider.slider.setRange(0, 100)
         self.shadow_slider.slider.setValue(25)
         self.shadow_slider.slider.valueChanged.connect(self.update_composite_sliders)
+        self.shadow_slider.btn_palette.clicked.connect(self.change_shadow_color)
 
         self.midtone_slider = self.create_labeled_slider("Midtone:", Qt.Horizontal)
         self.midtone_slider.slider.setRange(0, 100)
         self.midtone_slider.slider.setValue(50)
         self.midtone_slider.slider.valueChanged.connect(self.update_composite_sliders)
+        self.midtone_slider.btn_palette.clicked.connect(self.change_midtone_color)
 
         self.fleshtone_slider = self.create_labeled_slider("Fleshtone:", Qt.Horizontal)
         self.fleshtone_slider.slider.setRange(0, 100)
         self.fleshtone_slider.slider.setValue(75)
         self.fleshtone_slider.slider.valueChanged.connect(self.update_composite_sliders)
-
-        # Buttons
-        self.shadow_color_button = QPushButton("Choose Shadow Color", self)
-        self.shadow_color_button.clicked.connect(self.change_shadow_color)
-
-        self.midtone_color_button = QPushButton("Choose Midtone Color", self)
-        self.midtone_color_button.clicked.connect(self.change_midtone_color)
-
-        self.fleshtone_color_button = QPushButton("Choose Fleshtone Color", self)
-        self.fleshtone_color_button.clicked.connect(self.change_fleshtone_color)
+        self.fleshtone_slider.btn_palette.clicked.connect(self.change_fleshtone_color)
 
         self.checkbox_img_reverse = QCheckBox("Reverse Image", self)
         self.checkbox_img_reverse.setChecked(True)
@@ -97,9 +104,7 @@ class MainWindow(QMainWindow):
         settings_layout.addWidget(self.checkbox_img_reverse)
         settings_layout.addWidget(self.checkbox_autocontrast)
         settings_layout.addWidget(self.histogram_label)
-        settings_layout.addWidget(self.shadow_color_button)
-        settings_layout.addWidget(self.midtone_color_button)
-        settings_layout.addWidget(self.fleshtone_color_button)
+
 
         images_layout = QHBoxLayout()
         images_layout.addWidget(self.composite_image_label)
@@ -152,15 +157,24 @@ class MainWindow(QMainWindow):
         slider.setRange(0, 100)
         slider.setValue(50)  # Default value
 
+        # Buttons
+        btn_trash = get_button(icon_path=resources.files("portrait_prepper.resources") / "trash.png")
+        btn_palette = get_button(icon_path=resources.files("portrait_prepper.resources") / "pallette.png")
+
         # Create a layout for the label and slider
-        slider_layout = QVBoxLayout()
+        slider_layout = QHBoxLayout()
         slider_layout.addWidget(label)
         slider_layout.addWidget(slider)
+
+        slider_layout.addWidget(btn_trash)
+        slider_layout.addWidget(btn_palette)
 
         # Create a container widget to hold the label and slider layout
         container_widget = QWidget()
         container_widget.setLayout(slider_layout)
         container_widget.slider = slider
+        container_widget.btn_palette = btn_palette
+
 
         return container_widget
 
