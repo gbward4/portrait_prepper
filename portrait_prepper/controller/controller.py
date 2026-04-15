@@ -1,3 +1,4 @@
+from importlib import resources
 from PIL import Image, ImageOps
 from portrait_prepper.model.composite_image import pil2pixmap
 from portrait_prepper.model.layer import Layer
@@ -26,6 +27,9 @@ class MainController():
         self.shadow_color =(0, 0, 0)
         self.midtone_color = (0x58, 0x09, 0x9C)
         self.fleshtone_color = (0xFF, 0xAE, 0)
+
+        self.default_image_path = resources.files("portrait_prepper.resources") / "ricky.jpg"
+        # self.open_image(self.default_image_path)
 
     @property
     def reference_image(self):
