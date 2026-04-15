@@ -24,9 +24,6 @@ def get_button(icon_path, icon_size=25):
 
     return button
 
-def get_new_slider_group():
-    pass
-
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -141,19 +138,15 @@ class MainWindow(QMainWindow):
             return color
 
     def get_slider_group(self, label_text):
-        # Create a QLabel for the slider label
         label = QLabel(label_text)
 
-        # Create a QSlider
         slider = QSlider(Qt.Horizontal)
         slider.setRange(0, 100)
         slider.setValue(50)  # Default value
 
-        # Buttons
         btn_trash = get_button(icon_path=resources.files("portrait_prepper.resources") / "trash.png")
         btn_palette = get_button(icon_path=resources.files("portrait_prepper.resources") / "pallette.png")
 
-        # Create a layout for the label and slider
         slider_layout = QHBoxLayout()
         slider_layout.addWidget(label)
         slider_layout.addWidget(slider)
@@ -161,14 +154,13 @@ class MainWindow(QMainWindow):
         slider_layout.addWidget(btn_trash)
         slider_layout.addWidget(btn_palette)
 
-        # Create a container widget to hold the label and slider layout
-        container_widget = QWidget()
-        container_widget.setLayout(slider_layout)
-        container_widget.slider = slider
-        container_widget.btn_palette = btn_palette
-        container_widget.btn_trash = btn_trash
+        slider_group = QWidget()
+        slider_group.setLayout(slider_layout)
+        slider_group.slider = slider
+        slider_group.btn_palette = btn_palette
+        slider_group.btn_trash = btn_trash
 
-        return container_widget
+        return slider_group
 
     def checkbox_reverse_state_changed(self):
         self.signals.image_reverse_state_changed.emit()
