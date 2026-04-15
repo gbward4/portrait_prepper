@@ -108,6 +108,15 @@ class MainController():
         self.view.signals.update_composite_image.emit(pixmap)
 
     def build_composite_image(self):
+        layers = []
+        slider_groups = self.view.sliders
+        for slider_group in slider_groups:
+            # TODO I'm stuck here on shadow_color, should pick some gradient and move on for now.  In future it should have presets, and slider group should have a color identity
+            # TODO make a "layer" object that has "identity, color, threshold" attrs, 
+            # TODO make three color groups, shadow midtone, fleshtone that have a default color.  What I really want to do is divide in three groups and then show divisions there
+            layer = Layer(name="", raw_image=self.reference_image, threshold_percent=slider_group.slider.value(), canvas_color=self.shadow_color)
+            layers.append(layer)
+
         shadow_layer = Layer(name="shadow", raw_image=self.reference_image, threshold_percent=self.view.shadow_slider.slider.value(), canvas_color=self.shadow_color)
         midtone_layer = Layer(name="midtone", raw_image=self.reference_image, threshold_percent=self.view.midtone_slider.slider.value(), canvas_color=self.midtone_color)
         fleshtone_layer = Layer(name="fleshtone", raw_image=self.reference_image, threshold_percent=self.view.fleshtone_slider.slider.value(), canvas_color=self.fleshtone_color)

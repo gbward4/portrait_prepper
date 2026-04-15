@@ -10,3 +10,4 @@
 # reset histogram
 # add slider groups
 # autopopulate ricky
+# greyscale
