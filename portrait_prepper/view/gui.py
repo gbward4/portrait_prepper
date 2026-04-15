@@ -37,6 +37,7 @@ class MainWindow(QMainWindow):
 
     def initUI(self):
         self.signals = MainWindowSignals()
+        self.sliders = []
 
         # Menu Bar
         menubar = self.menuBar()
@@ -73,23 +74,15 @@ class MainWindow(QMainWindow):
         self.add_button = get_button(icon_path=resources.files("portrait_prepper.resources") / "add.png")
 
         # Sliders        
-        self.shadow_slider = self.create_labeled_slider("Shadow:", Qt.Horizontal)
-        self.shadow_slider.slider.setRange(0, 100)
-        self.shadow_slider.slider.setValue(25)
-        self.shadow_slider.slider.valueChanged.connect(self.update_composite_sliders)
-        self.shadow_slider.btn_palette.clicked.connect(self.change_shadow_color)
+        num_sliders_default = 3
 
-        self.midtone_slider = self.create_labeled_slider("Midtone:", Qt.Horizontal)
-        self.midtone_slider.slider.setRange(0, 100)
-        self.midtone_slider.slider.setValue(50)
-        self.midtone_slider.slider.valueChanged.connect(self.update_composite_sliders)
-        self.midtone_slider.btn_palette.clicked.connect(self.change_midtone_color)
-
-        self.fleshtone_slider = self.create_labeled_slider("Fleshtone:", Qt.Horizontal)
-        self.fleshtone_slider.slider.setRange(0, 100)
-        self.fleshtone_slider.slider.setValue(75)
-        self.fleshtone_slider.slider.valueChanged.connect(self.update_composite_sliders)
-        self.fleshtone_slider.btn_palette.clicked.connect(self.change_fleshtone_color)
+        for idx in range(num_sliders_default):
+            slider_group = self.get_slider_group("")
+            slider_group.slider.setRange(0, 100)
+            slider_spacing = int(100 / (num_sliders_default + 1))
+            slider_group.slider.setValue((idx + 1) * slider_spacing)
+            slider_group.slider.valueChanged.connect(self.update_composite_sliders)
+            self.sliders.append(slider_group)
 
         self.checkbox_img_reverse = QCheckBox("Reverse Image", self)
         self.checkbox_img_reverse.setChecked(True)
@@ -118,9 +111,8 @@ class MainWindow(QMainWindow):
         labels_layout.addLayout(settings_layout)
 
         sliders_layout = QVBoxLayout()
-        sliders_layout.addWidget(self.shadow_slider)
-        sliders_layout.addWidget(self.midtone_slider)
-        sliders_layout.addWidget(self.fleshtone_slider)
+        for slider_group in self.sliders:
+            sliders_layout.addWidget(slider_group)
 
         main_layout.addLayout(labels_layout)
         main_layout.addLayout(sliders_layout)
@@ -151,12 +143,12 @@ class MainWindow(QMainWindow):
         if color.isValid():
             return color
 
-    def create_labeled_slider(self, label_text, orientation):
+    def get_slider_group(self, label_text):
         # Create a QLabel for the slider label
         label = QLabel(label_text)
 
         # Create a QSlider
-        slider = QSlider(orientation)
+        slider = QSlider(Qt.Horizontal)
         slider.setRange(0, 100)
         slider.setValue(50)  # Default value
 

@@ -4,3 +4,9 @@
 # Allow change color
 # about
 # Installer
+
+# add grid
+# user defined grid
+# reset histogram
+# add slider groups
+# autopopulate ricky
