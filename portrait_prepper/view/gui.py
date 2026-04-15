@@ -1,5 +1,5 @@
 from importlib import resources
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QColor
 from PyQt5.QtWidgets import QMainWindow, QLabel, QSlider, QVBoxLayout, QWidget, QAction, QFileDialog, QHBoxLayout, QCheckBox, QColorDialog, QPushButton
 from PyQt5.QtCore import Qt, QObject, pyqtSignal, pyqtSlot, QSize
 
@@ -14,9 +14,8 @@ class MainWindowSignals(QObject):
     update_composite_image = pyqtSignal(object)
     update_histogram = pyqtSignal(object)
     update_color_scheme = pyqtSignal(object)
-    update_shadow_color = pyqtSignal(object)
-    update_midtone_color = pyqtSignal(object)
-    update_fleshtone_color = pyqtSignal(object)
+    update_layer_color = pyqtSignal(int, QColor)
+    delete_layer_request = pyqtSignal(int)
 
 def get_button(icon_path, icon_size=25):
     button = QPushButton()
@@ -74,7 +73,7 @@ class MainWindow(QMainWindow):
         self.add_button = get_button(icon_path=resources.files("portrait_prepper.resources") / "add.png")
 
         # Sliders        
-        num_sliders_default = 3
+        num_sliders_default = 8
 
         for idx in range(num_sliders_default):
             slider_group = self.get_slider_group("")
@@ -82,6 +81,9 @@ class MainWindow(QMainWindow):
             slider_spacing = int(100 / (num_sliders_default + 1))
             slider_group.slider.setValue((idx + 1) * slider_spacing)
             slider_group.slider.valueChanged.connect(self.update_composite_sliders)
+            slider_group.layer_identity = idx  # lazy attr assigning a layer identity I pick up in controller later.  Should be a class attr, but meh for now
+            slider_group.btn_palette.clicked.connect(lambda _, i=idx: self.change_layer_color_requested(i))
+            slider_group.btn_trash.clicked.connect(lambda _, i=idx: self.delete_layer_requested(i))
             self.sliders.append(slider_group)
 
         self.checkbox_img_reverse = QCheckBox("Reverse Image", self)
@@ -122,17 +124,12 @@ class MainWindow(QMainWindow):
         self.setWindowTitle('Portrait Prepper')
         self.setGeometry(100, 100, 800, 600)
 
-    def change_shadow_color(self):
+    def change_layer_color_requested(self, layer_idx):
         color = self.show_color_dialog()
-        self.signals.update_shadow_color.emit(color)
+        self.signals.update_layer_color.emit(layer_idx, color)
 
-    def change_midtone_color(self):
-        color = self.show_color_dialog()
-        self.signals.update_midtone_color.emit(color)
-
-    def change_fleshtone_color(self):
-        color = self.show_color_dialog()
-        self.signals.update_fleshtone_color.emit(color)
+    def delete_layer_requested(self, layer_idx):
+        self.signals.delete_layer_request.emit(layer_idx)
 
     def show_color_dialog(self):
         color_dialog = QColorDialog(self)
@@ -169,7 +166,7 @@ class MainWindow(QMainWindow):
         container_widget.setLayout(slider_layout)
         container_widget.slider = slider
         container_widget.btn_palette = btn_palette
-
+        container_widget.btn_trash = btn_trash
 
         return container_widget
 

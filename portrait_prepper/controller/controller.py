@@ -16,9 +16,8 @@ class MainController():
         self.view.signals.composite_sliders_updated.connect(self.update_images)
         self.view.signals.save_image.connect(self.save_image)
         self.view.signals.load_image.connect(self.open_image)
-        self.view.signals.update_shadow_color.connect(self.update_shadow_color)
-        self.view.signals.update_midtone_color.connect(self.update_midtone_color)
-        self.view.signals.update_fleshtone_color.connect(self.update_fleshtone_color)
+        self.view.signals.update_layer_color.connect(self.update_layer_color)
+        self.view.signals.delete_layer_request.connect(self.delete_layer)
 
         self._original_image = None
         self.composite_image = None
@@ -48,6 +47,14 @@ class MainController():
         self.update_reference_image()
         self.update_composite_image()
         self.update_histogram()
+
+    def delete_layer(self):
+        pass
+
+    def update_layer_color(self, layer, color):
+        pass
+        # TODO STOPPED HERE.  GUI UPDATED, BUT CONTROLLER NEEDS UPDATE TO HANDLE LAYERS
+        # self.update_images()
 
     def update_shadow_color(self, color):
         self.shadow_color = (color.red(), color.green(), color.blue())
