@@ -69,6 +69,9 @@ class MainWindow(QMainWindow):
         self.histogram_label.setAlignment(Qt.AlignCenter)
         self.signals.update_histogram.connect(self.update_histogram)
 
+        # Add button
+        self.add_button = get_button(icon_path=resources.files("portrait_prepper.resources") / "add.png")
+
         # Sliders        
         self.shadow_slider = self.create_labeled_slider("Shadow:", Qt.Horizontal)
         self.shadow_slider.slider.setRange(0, 100)
@@ -104,7 +107,7 @@ class MainWindow(QMainWindow):
         settings_layout.addWidget(self.checkbox_img_reverse)
         settings_layout.addWidget(self.checkbox_autocontrast)
         settings_layout.addWidget(self.histogram_label)
-
+        settings_layout.addWidget(self.add_button)
 
         images_layout = QHBoxLayout()
         images_layout.addWidget(self.composite_image_label)
