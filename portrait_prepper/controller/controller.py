@@ -6,7 +6,7 @@ from portrait_prepper.model.histogram import get_histogram
 from portrait_prepper.view.gui import SliderGroup
 from copy import copy
 
-colors = [(0, 0, 0), (0x58, 0x09, 0x9C), (0xFF, 0xAE, 0)]
+colors = [(0, 0, 0), (0x58, 0x09, 0x9C), (0xFF, 0xAE, 0), (0, 0, 0), (0x58, 0x09, 0x9C), (0xFF, 0xAE, 0)]
 
 
 class Layer():
@@ -38,22 +38,20 @@ class MainController():
         self.midtone_color = (0x58, 0x09, 0x9C)
         self.fleshtone_color = (0xFF, 0xAE, 0)
 
+        self.layers = []
+
         self.build_sliders()  # todo move to setup
 
         self.default_image_path = resources.files("portrait_prepper.resources") / "ricky.jpg"
         # self.open_image(self.default_image_path)
 
-        self.layers = []
 
     def build_sliders(self):
-
         default_num_layers = 3
         slider_spacing = int(100 / (default_num_layers + 1))
         for layer_idx in range(default_num_layers):
             default_slider_value = ((layer_idx + 1) * slider_spacing)
-            self.add_layer(layer_idx, default_slider_value)
-            # color
-
+            self.add_layer(default_slider_value)
 
     # for idx in range(num_sliders_default):
     #     slider_group.slider.valueChanged.connect(lambda _, i=idx: self.update_composite_sliders(i))  # udpate to emit layer number
@@ -82,16 +80,19 @@ class MainController():
         self.update_composite_image()
         self.update_histogram()
 
-    def add_layer(self, layer_idx, default_slider_value=0):
-        # layer = Layer()
-        # self.layers.append(layer)
-        slider_group = SliderGroup(layer_identity=layer_idx, value=default_slider_value)
+    def add_layer(self, default_slider_value=0):
+        stack_order = len(self.layers)  # zero indexed
+        layer = Layer(color=colors[stack_order], stack_order=stack_order)  # going to break on index error
+        self.layers.append(layer)
+        slider_group = SliderGroup(layer_identity=stack_order, value=default_slider_value)
         self.view.sliders_layout.addWidget(slider_group)
 
     def user_requested_add_layer(self):
         self.add_layer(4)
 
     def delete_layer(self):
+        # pop layer
+        # remove slider by name
         pass
 
     def update_layer_color(self, layer, color):
