@@ -16,6 +16,7 @@ class MainWindowSignals(QObject):
     update_color_scheme = pyqtSignal(object)
     update_layer_color = pyqtSignal(int, QColor)
     delete_layer_request = pyqtSignal(int)
+    add_layer_request = pyqtSignal()
 
 def get_button(icon_path, icon_size=25):
     button = QPushButton()
@@ -68,6 +69,7 @@ class MainWindow(QMainWindow):
 
         # Add button
         self.add_button = get_button(icon_path=resources.files("portrait_prepper.resources") / "add.png")
+        self.add_button.clicked.connect(self.add_layer_requested)
 
         self.checkbox_img_reverse = QCheckBox("Reverse Image", self)
         self.checkbox_img_reverse.setChecked(True)
@@ -108,6 +110,9 @@ class MainWindow(QMainWindow):
 
     def update_composite_sliders(self, layer_idx):
         self.signals.composite_sliders_updated.emit(layer_idx)
+
+    def add_layer_requested(self):
+        self.signals.add_layer_request.emit()
 
     def change_layer_color_requested(self, layer_idx):
         color = self.show_color_dialog()

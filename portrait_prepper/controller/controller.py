@@ -28,6 +28,7 @@ class MainController():
         self.view.signals.load_image.connect(self.open_image)
         self.view.signals.update_layer_color.connect(self.update_layer_color)
         self.view.signals.delete_layer_request.connect(self.delete_layer)
+        self.view.signals.add_layer_request.connect(self.user_requested_add_layer)
 
         self._original_image = None
         self.composite_image = None
@@ -46,13 +47,11 @@ class MainController():
 
     def build_sliders(self):
 
-
         default_num_layers = 3
         slider_spacing = int(100 / (default_num_layers + 1))
         for layer_idx in range(default_num_layers):
             default_slider_value = ((layer_idx + 1) * slider_spacing)
-            slider_group = SliderGroup(layer_identity=layer_idx, value=default_slider_value)
-            self.view.sliders_layout.addWidget(slider_group)
+            self.add_layer(layer_idx, default_slider_value)
             # color
 
 
@@ -82,6 +81,15 @@ class MainController():
         self.update_reference_image()
         self.update_composite_image()
         self.update_histogram()
+
+    def add_layer(self, layer_idx, default_slider_value=0):
+        # layer = Layer()
+        # self.layers.append(layer)
+        slider_group = SliderGroup(layer_identity=layer_idx, value=default_slider_value)
+        self.view.sliders_layout.addWidget(slider_group)
+
+    def user_requested_add_layer(self):
+        self.add_layer(4)
 
     def delete_layer(self):
         pass
