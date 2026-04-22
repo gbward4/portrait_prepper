@@ -6,7 +6,14 @@ from portrait_prepper.model.histogram import get_histogram
 from portrait_prepper.view.gui import SliderGroup
 from copy import copy
 
+colors = [(0, 0, 0), (0x58, 0x09, 0x9C), (0xFF, 0xAE, 0)]
 
+
+class Layer():
+
+    def __init__(self, color, stack_order):
+        self.color = color
+        self.stack_order = stack_order
 
 class MainController():
     """ Main Controller Class """
@@ -35,7 +42,11 @@ class MainController():
         self.default_image_path = resources.files("portrait_prepper.resources") / "ricky.jpg"
         # self.open_image(self.default_image_path)
 
+        self.layers = []
+
     def build_sliders(self):
+
+
         default_num_layers = 3
         slider_spacing = int(100 / (default_num_layers + 1))
         for layer_idx in range(default_num_layers):
@@ -46,8 +57,8 @@ class MainController():
 
 
     # for idx in range(num_sliders_default):
-    #     slider_group.slider.valueChanged.connect(self.update_composite_sliders)  # udpate to emit layer number
-    #     slider_group.btn_palette.clicked.connect(lambda _, i=idx: self.change_layer_color_requested(i))
+    #     slider_group.slider.valueChanged.connect(lambda _, i=idx: self.update_composite_sliders(i))  # udpate to emit layer number
+    #     slider_group.btn_palette.clicked.connect(lambda _, i=idx, c=color: self.change_layer_color_requested(i, c))
     #     slider_group.btn_trash.clicked.connect(lambda _, i=idx: self.delete_layer_requested(i))
     #     self.sliders.append(slider_group)
 

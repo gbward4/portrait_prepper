@@ -7,7 +7,7 @@ from PyQt5.QtCore import Qt, QObject, pyqtSignal, pyqtSlot, QSize
 class MainWindowSignals(QObject):
     image_reverse_state_changed = pyqtSignal()
     autocontrast_state_changed = pyqtSignal()
-    composite_sliders_updated = pyqtSignal()
+    composite_sliders_updated = pyqtSignal(int)
     save_image = pyqtSignal(str)
     load_image = pyqtSignal(str)
     update_reference_image = pyqtSignal(object)
@@ -69,20 +69,6 @@ class MainWindow(QMainWindow):
         # Add button
         self.add_button = get_button(icon_path=resources.files("portrait_prepper.resources") / "add.png")
 
-        # Sliders        
-        # num_sliders_default = 8
-
-        # for idx in range(num_sliders_default):
-        #     slider_group = self.get_slider_group("")
-        #     slider_group.slider.setRange(0, 100)
-        #     slider_spacing = int(100 / (num_sliders_default + 1))
-        #     slider_group.slider.setValue((idx + 1) * slider_spacing)
-        #     slider_group.slider.valueChanged.connect(self.update_composite_sliders)
-        #     slider_group.layer_identity = idx  # lazy attr assigning a layer identity I pick up in controller later.  Should be a class attr, but meh for now
-        #     slider_group.btn_palette.clicked.connect(lambda _, i=idx: self.change_layer_color_requested(i))
-        #     slider_group.btn_trash.clicked.connect(lambda _, i=idx: self.delete_layer_requested(i))
-        #     self.sliders.append(slider_group)
-
         self.checkbox_img_reverse = QCheckBox("Reverse Image", self)
         self.checkbox_img_reverse.setChecked(True)
         self.checkbox_img_reverse.stateChanged.connect(self.checkbox_reverse_state_changed)
@@ -109,9 +95,8 @@ class MainWindow(QMainWindow):
         labels_layout.addLayout(images_layout)
         labels_layout.addLayout(settings_layout)
 
+        # Controller will dynamically populate
         self.sliders_layout = QVBoxLayout()
-        # for slider_group in self.sliders:
-        #     sliders_layout.addWidget(slider_group)
 
         main_layout.addLayout(labels_layout)
         main_layout.addLayout(self.sliders_layout)
@@ -120,6 +105,9 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle('Portrait Prepper')
         self.setGeometry(100, 100, 800, 600)
+
+    def update_composite_sliders(self, layer_idx):
+        self.signals.composite_sliders_updated.emit(layer_idx)
 
     def change_layer_color_requested(self, layer_idx):
         color = self.show_color_dialog()
@@ -137,39 +125,12 @@ class MainWindow(QMainWindow):
         if color.isValid():
             return color
 
-    # def get_slider_group(self, label_text):
-    #     label = QLabel(label_text)
-
-    #     slider = QSlider(Qt.Horizontal)
-    #     slider.setRange(0, 100)
-    #     slider.setValue(50)  # Default value
-
-    #     btn_trash = get_button(icon_path=resources.files("portrait_prepper.resources") / "trash.png")
-    #     btn_palette = get_button(icon_path=resources.files("portrait_prepper.resources") / "pallette.png")
-
-    #     slider_layout = QHBoxLayout()
-    #     slider_layout.addWidget(label)
-    #     slider_layout.addWidget(slider)
-
-    #     slider_layout.addWidget(btn_trash)
-    #     slider_layout.addWidget(btn_palette)
-
-    #     slider_group = QWidget()
-    #     slider_group.setLayout(slider_layout)
-    #     slider_group.slider = slider
-    #     slider_group.btn_palette = btn_palette
-    #     slider_group.btn_trash = btn_trash
-
-    #     return slider_group
-
     def checkbox_reverse_state_changed(self):
         self.signals.image_reverse_state_changed.emit()
 
     def autocontrast_state_changed(self):
         self.signals.autocontrast_state_changed.emit()
 
-    def update_composite_sliders(self):
-        self.signals.composite_sliders_updated.emit()
 
     def open_image(self):
         file_dialog = QFileDialog()
@@ -205,7 +166,7 @@ class SliderGroup(QWidget):
         self.layer_identity = layer_identity
         self.color = None
         self.label = None
-        self.slider_value = value
+        self.slider_init_value = value
 
         self.slider = None
         self.btn_palette = None
@@ -218,7 +179,7 @@ class SliderGroup(QWidget):
 
         slider = QSlider(Qt.Horizontal)
         slider.setRange(0, 100)
-        slider.setValue(self.slider_value)
+        slider.setValue(self.slider_init_value)
 
         btn_trash = get_button(icon_path=resources.files("portrait_prepper.resources") / "trash.png")
         btn_palette = get_button(icon_path=resources.files("portrait_prepper.resources") / "pallette.png")
